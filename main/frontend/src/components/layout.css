@@ -1,0 +1,12 @@
+.layout {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background-color: var(--background-light);
+}
+.outlet {
+    flex-grow: 1;
+    padding: 40px 20px;
+    display: flex;
+    align-items: flex-start;
+}

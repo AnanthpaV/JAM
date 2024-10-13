@@ -1,0 +1,174 @@
+:root {
+    --dark-green: #264653;
+    --green: #2A9D8F;
+    --yellow: #E9C46A;
+    --orange: #F4A261;
+    --red: #E76F51;
+    --gray: rgb(116, 116, 116);
+    --light_gray:rgb(169, 169, 169);
+    --l-d-green: #516269;
+    --white: #FFFFFF;
+    --text-active: #000000; 
+}
+
+.sec_int {
+    background-color: var(--white);
+    color: white;
+    padding: 20px;
+    position: relative;
+}
+
+.title {
+    color: #000000;
+    font-size: 14px;
+}
+
+.nav-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    margin-bottom: 25px;
+}
+
+.search-wrapper {
+    display: flex;
+    font-size: 0.8em;
+    align-items: center;
+    background-color: var(--white);
+    border-radius: 50px;
+    padding: 5px;
+    margin: 0 auto;
+    max-width: 700px;
+    max-height: 50px;
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+    flex-wrap: wrap;
+}
+
+.search-options {
+    align-items: center;
+    padding: 5px 20px;
+    border-radius: 50px;
+    transition: background-color 0.3s ease;
+    cursor: pointer;
+    width: 100px;
+    flex: 1;
+    text-align: center;
+}
+
+.search-options:hover {
+    background-color: var(--white);
+    box-shadow: inset 0px 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.search-options .option {
+    color: var(--gray);
+    margin-right: 1px;
+}
+
+.search-options .input-placeholder {
+    color: var(--gray);
+}
+
+.search-bar {
+    padding: 2px;
+    border: none;
+    flex-grow: 1;
+}
+
+.search-bar::placeholder {
+    font-size: 12px;
+}
+
+@media (max-width: 770px) {
+    .search-wrapper {
+        width: 90%;
+    }
+    .search-options {
+        width: 50px;
+    }
+    .option, .input-placeholder {
+        font-size: 10px;
+    }
+    .search-bar::placeholder {
+        font-size: 8px;
+    }
+}
+
+.search-button {
+    background-color: var(--orange);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    margin-left: 10px;
+}
+
+.nav-links {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    position: absolute; 
+    left: 50%;
+    transform: translateX(-50%); 
+}
+
+.nav-links a {
+    color: var(--gray);
+    font-size: 16px;
+    text-decoration: none;
+    padding: 10px 20px;
+    border-radius: 20px;
+    transition: color 0.3s ease;
+}
+
+.nav-links a.active-tab {
+    color: var(--text-active); 
+}
+
+/* Menu and User Info Styles */
+.menu {
+    display: flex;
+    align-items: center;
+    width: auto; /* Adjust this to fit content dynamically */
+    padding: 5px;
+    box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.1);
+    border-radius: 40px;
+    border: 0.1px solid gray;
+    background-color: var(--white);
+    overflow: hidden; /* Prevent overflow */
+}
+
+.menu img {
+    width: 20px;
+    height: 20px;
+    padding: 3px;
+    margin-right: 5px; /* Spacing between icon and text */
+}
+
+.menu .user-info-container {
+    display: flex;
+    align-items: center;
+    margin-left: 5px; /* Adjust margin for alignment */
+}
+
+.menu .user-name {
+    color: var(--text-active);
+    font-size: 14px; /* Adjust font-size if too large */
+    font-weight: bold;
+    white-space: nowrap; /* Prevent text from wrapping */
+    overflow: hidden; /* Ensure text stays within container */
+    text-overflow: ellipsis; /* Show ellipsis if text is too long */
+    max-width: 100px; /* Control the maximum width of the user name */
+}
+
+.user-link {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+}
