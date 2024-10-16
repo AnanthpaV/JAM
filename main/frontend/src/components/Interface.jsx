@@ -1,15 +1,53 @@
-import { Link, useLocation } from "react-router-dom";
-import { useContext } from "react";
+import React, { useState, useContext } from 'react';
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import './home.css';
 import menu from "./images/menu.png";
 import user1 from "./images/user.png";
 import { UserContext } from "./UserContext";
-import React from "react";
+import axios from 'axios';
+import DatePicker from 'react-datepicker';
+import "react-datepicker/dist/react-datepicker.css";
 
 export default function Interface() {
     const { user } = useContext(UserContext);
     const location = useLocation();
+    const navigate = useNavigate();
+    const [searchQuery, setSearchQuery] = useState('');
+    const [checkIn, setCheckIn] = useState(null);
+    const [checkOut, setCheckOut] = useState(null);
+    const [guests, setGuests] = useState(1);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
 
+    const handleSearch = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        setError(null);
+        try {
+            const response = await axios.get(`http://localhost:3000/api/search`, {
+                params: {
+                    query: searchQuery,
+                    checkIn: checkIn ? checkIn.toISOString() : null,
+                    checkOut: checkOut ? checkOut.toISOString() : null,
+                    guests: guests
+                }
+            });
+            navigate('/search-results', {
+                state: {
+                    query: searchQuery,
+                    results: response.data,
+                    checkIn,
+                    checkOut,
+                    guests
+                }
+            });
+        } catch (error) {
+            console.error('Error during search:', error);
+            setError('An error occurred while searching. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
     return (
         <header className="sec_int">
             <div className="nav-bar">
@@ -17,14 +55,14 @@ export default function Interface() {
                     <Link to="/">Just Another Mansion</Link>
                 </h1>
                 <div className="nav-links">
-                    <Link 
-                        to="/" 
+                    <Link
+                        to="/"
                         className={location.pathname === "/" ? "active-tab" : ""}
                     >
                         Stays
                     </Link>
-                    <Link 
-                        to="/experiences" 
+                    <Link
+                        to="/experiences"
                         className={location.pathname === "/experiences" ? "active-tab" : ""}
                     >
                         Experiences
@@ -42,30 +80,60 @@ export default function Interface() {
                     </Link>
                 </div>
             </div>
-            <div className="search-wrapper">
+            <form onSubmit={handleSearch} className="search-wrapper">
                 <div className="search-options">
                     <div className="option">Where</div>
-                    <input type="text" className="search-bar" placeholder="Search destinations" />
+                    <input
+                        type="text"
+                        className="search-bar"
+                        placeholder="Search destinations"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                    />
                 </div>
                 <div className="vertical-line"></div>
                 <div className="search-options">
                     <div className="option">Check in</div>
-                    <div className="input-placeholder">Add dates</div>
+                    <DatePicker
+                        selected={checkIn}
+                        onChange={(date) => setCheckIn(date)}
+                        selectsStart
+                        startDate={checkIn}
+                        endDate={checkOut}
+                        placeholderText="Add dates"
+                        className="date-picker"
+                    />
                 </div>
                 <div className="vertical-line"></div>
                 <div className="search-options">
                     <div className="option">Check out</div>
-                    <div className="input-placeholder">Add dates</div>
+                    <DatePicker
+                        selected={checkOut}
+                        onChange={(date) => setCheckOut(date)}
+                        selectsEnd
+                        startDate={checkIn}
+                        endDate={checkOut}
+                        minDate={checkIn}
+                        placeholderText="Add dates"
+                        className="date-picker"
+                    />
                 </div>
                 <div className="vertical-line"></div>
                 <div className="search-options">
-                    <div className="option">Who</div>
-                    <div className="input-placeholder">Add guests</div>
+                    <div className="option">Guests</div>
+                    <input
+                        type="number"
+                        min="1"
+                        value={guests}
+                        onChange={(e) => setGuests(parseInt(e.target.value))}
+                        className="guests-input"
+                    />
                 </div>
-                <button className="search-button">
-                    <i className="fas fa-search"></i>
+                <button type="submit" className="search-button" disabled={loading}>
+                    {loading ? 'Searching...' : <i className="fas fa-search"></i>}
                 </button>
-            </div>
+            </form>
+            {error && <div className="error-message">{error}</div>}
         </header>
     );
 }
