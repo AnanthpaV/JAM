@@ -5,8 +5,10 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const Place = require('./models/Place');
 const User = require('./models/User');
+const Booking = require('./models/Booking');
 const ImageDownloader = require('image-downloader');
 const path = require('path');
+const router = express.Router();
 const multer = require('multer');
 const fs = require('fs');
 const cookieParser = require('cookie-parser');
@@ -29,6 +31,14 @@ mongoose.connect(process.env.MONGO_URL)
     .then(() => console.log('Connected to MongoDB'))
     .catch((error) => console.error('Error connecting to MongoDB:', error));
 
+function getUserDataFromToken(req){
+    return new Promise((resolve,reject) => {
+        jwt.verify(req.cookies.token, jwtSecret, {}, async (err, userData) => {
+            if (err) throw err;
+            resolve(userData);
+        });
+    })
+}
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, path.join(__dirname, 'uploads'));
@@ -98,6 +108,78 @@ app.post('/login', async (req, res) => {
         }
     } catch (error) {
         res.status(500).json({ message: 'Login failed' });
+    }
+});
+// Booking Routes Implementation
+app.get('/bookings/:id', async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const booking = await Booking.findById(id).populate('place');
+        if (!booking) {
+            return res.status(404).json({ message: 'Booking not found' });
+        }
+        res.json(booking);
+    } catch (error) {
+        console.error('Error fetching booking:', error);
+        res.status(500).json({ message: 'Error fetching booking', error: error.message });
+    }
+});
+
+// POST to cancel a booking (updates status to 'Cancelled')
+app.post('/bookings/:id/cancel', async (req, res) => {
+    try {
+        const booking = await Booking.findById(req.params.id);
+        if (!booking) {
+            return res.status(404).json({ message: 'Booking not found' });
+        }
+
+        // Update the booking's status to 'Cancelled'
+        booking.status = 'Cancelled';
+        await booking.save(); // Make sure to save the update
+
+        res.json({ message: 'Booking cancelled successfully', booking });
+    } catch (error) {
+        console.error('Error cancelling booking:', error);
+        res.status(500).json({ message: 'Error cancelling booking', error: error.message });
+    }
+});
+
+// GET all bookings for the logged-in user
+app.get('/bookings', async (req, res) => {
+    try {
+        const userData = await getUserDataFromToken(req);
+        const bookings = await Booking.find({ user: userData.id }).populate('place');
+        res.json(bookings);
+    } catch (error) {
+        console.error('Error fetching bookings:', error);
+        res.status(500).json({ message: 'Error fetching bookings', error: error.message });
+    }
+});
+
+// POST to create a new booking
+app.post('/bookings', async (req, res) => {
+    try {
+        const userData = await getUserDataFromToken(req);
+        const { place, checkIn, checkOut, name, guests, phone, price } = req.body;
+
+        // Create and save a new booking
+        const booking = await Booking.create({
+            place,
+            checkIn,
+            checkOut,
+            name,
+            guests,
+            phone,
+            price,
+            user: userData.id,
+            status: 'Pending', // Default status on creation
+        });
+
+        res.json(booking);
+    } catch (error) {
+        console.error('Error creating booking:', error);
+        res.status(500).json({ message: 'Booking creation failed', error: error.message });
     }
 });
 
@@ -311,6 +393,85 @@ app.post('/upload-by-link', async (req, res) => {
     }
 });
 
+/* app.post('/bookings', async (req, res) => {
+    const userData = await getUserDataFromToken(req);
+    try {
+      const { place, checkIn, checkOut, name, guests, phone, price } = req.body;
+      const booking = await Booking.create({
+        place, checkIn, checkOut, name, guests, phone, price,user:userData.id,
+      });
+      res.json(booking);
+    } catch (err) {
+      console.error('Error creating booking:', err);
+      res.status(500).json({ message: 'Booking creation failed' });
+    }
+}); */
+
+
+app.get('/api/search', async (req, res) => {
+    const { query, checkIn, checkOut, guests } = req.query;
+    try {
+        const regex = new RegExp(query, 'i'); // Case-insensitive regex for searching
+        const places = await Place.find({
+            $or: [
+                { title: regex },
+                { address: regex },
+                { description: regex }
+            ],
+            maxGuests: { $gte: parseInt(guests) || 1 }
+        }).limit(10);
+
+        // Assuming you have implemented this logic in `isAvailable`
+        const availablePlaces = places.filter(place => isAvailable(place, checkIn, checkOut));
+
+        const formattedResults = availablePlaces.map(place => ({
+            id: place._id,
+            title: place.title,
+            address: place.address,
+            photo: place.photos[0] || null,
+            price: place.price,
+            rating: place.rating || Math.floor(Math.random() * 5) + 1
+        }));
+
+        res.json(formattedResults);
+    } catch (error) {
+        console.error('Error during search:', error);
+        res.status(500).json({ message: 'An error occurred during search' });
+    }
+});
+
+
+
+app.get('/api/nearby', async (req, res) => {
+    const { address } = req.query;
+    try {
+        const nearbyPlaces = await Place.find({
+            address: { $regex: new RegExp(address.split(',')[0], 'i') }
+        }).limit(5);
+
+        const formattedResults = nearbyPlaces.map(place => ({
+            id: place._id,
+            title: place.title,
+            address: place.address,
+            photo: place.photos[0] || null,
+            price: place.price,
+            rating: place.rating || Math.floor(Math.random() * 5) + 1
+        }));
+        res.json(formattedResults);
+    } catch (error) {
+        console.error('Error fetching nearby places:', error);
+        res.status(500).json({ message: 'An error occurred while fetching nearby places' });
+    }
+});
+
+function isAvailable(place, checkIn, checkOut) {
+    return true;
+}
+
+app.get('/bookings',async (req,res)=>{
+    const userData = await getUserDataFromToken(req);
+    res.json(await Booking.find({user:userData.id}).populate('place'))
+});
 app.get('/test', (req, res) => {
     res.send('Hello world');
 });
