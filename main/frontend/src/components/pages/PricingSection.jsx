@@ -1,13 +1,25 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { differenceInDays, parse } from "date-fns";
 import "./placePages.css"
+import axios from "axios";
+import { Navigate } from "react-router-dom";
+import { UserContext } from "../UserContext";
 
 export default function PricingSection({ place }) {
   const [guests, setGuests] = useState(1);
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
   const [nights, setNights] = useState(0);
+  const [phone, setPhone] = useState("");
+  const [name,setName] = useState("");
+  const [redirect,setRedirect] = useState('');
+  const {user} = useContext(UserContext);
 
+  useEffect(()=>{
+    if(user) {
+      setName(user.name);
+    }
+  },[user]);
   useEffect(() => {
     if (checkIn && checkOut) {
       const start = parse(checkIn, "yyyy-MM-dd", new Date());
@@ -19,6 +31,27 @@ export default function PricingSection({ place }) {
 
   const totalPrice = place.price * nights + 300 + 500; // Base + Cleaning fee + Service fee
 
+  async function bookThisPlace() {
+    try {
+        const response = await axios.post("http://localhost:3000/bookings", {
+            checkIn,
+            checkOut,
+            guests,
+            name,
+            phone,
+            place: place._id,
+            price: totalPrice,
+        });
+        const bookingId = response.data._id;
+        setRedirect(`/account/bookings/${bookingId}`); // Correctly formatted
+    } catch (error) {
+        console.error("Error creating booking:", error);
+    }
+}
+
+  if(redirect){
+    return <Navigate to={redirect}/>
+  }
   return (
     <div className="listing-price-container">
       <div className="price-header">
@@ -60,8 +93,30 @@ export default function PricingSection({ place }) {
           <span className="dropdown-arrow">▼</span>
         </div>
       </div>
+      <div className="input-container">
+        <label htmlFor="name">Name</label>
+        <input
+            id="name"
+            type="text"
+            placeholder="Enter your name"
+            value={name}
+            onChange={ev => setName(ev.target.value)}
+        />
+        </div>
 
-      <button className="reserve-button">Reserve</button>
+        <div className="input-container">
+        <label htmlFor="phone">Phone Number</label>
+        <input
+            id="phone"
+            type="tel"
+            placeholder="xxxxx-xxxxx"
+            value={phone}
+            onChange={ev => setPhone(ev.target.value)}
+        />
+        </div>
+
+
+      <button onClick={bookThisPlace} className="reserve-button">Reserve</button>
 
       <p className="no-charge-text">You won't be charged yet</p>
 
